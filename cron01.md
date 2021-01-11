@@ -900,6 +900,296 @@ db.my_collection.createIndex({uid:1})
 
 
 
+## 4、插入
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"time"
+
+	//"go.mongodb.org/mongo-driver/bson/primitive"
+	//"time"
+
+	//"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	//"time"
+)
+
+//任务的执行时间点
+type TimePoint struct {
+	StartTime int64 `bson:"startTime"`
+	EndTime   int64 `bson:"endTime"`
+}
+
+// 一条日志
+type LogRecord struct {
+	JobName   string    `bson:"jobName"`   // 任务名
+	Command   string    `bson:"command"`   // shell命令
+	Err       string    `bson:"err"`       // 脚本错误
+	Content   string    `bson:"content"`   // 脚本输出
+	TimePoint TimePoint `bson:"timePoint"` // 执行时间点
+}
+
+func main() {
+	var (
+		client *mongo.Client
+		result *mongo.InsertOneResult
+		err    error
+	)
+
+	//1.建立连接
+	// 建立mongodb连接
+	clientOptions := options.Client().ApplyURI("mongodb://127.0.0.1:27017")
+	if client, err = mongo.Connect(
+		context.TODO(), clientOptions); err != nil {
+		fmt.Println(err)
+		return
+	}
+	// 2, 选择数据库my_db
+	database := client.Database("ichunt")
+
+	// 3, 选择表my_collection
+	collection := database.Collection("cron_log")
+
+	//4, 插入记录(bson)
+	record := &LogRecord{
+		JobName:   "job10",
+		Command:   "echo hello",
+		Err:       "",
+		Content:   "hello",
+		TimePoint: TimePoint{StartTime: time.Now().Unix(), EndTime: time.Now().Unix() + 10},
+	}
+
+	if result, err = collection.InsertOne(context.TODO(), record); err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println(result)
+
+	//// _id: 默认生成一个全局唯一ID, ObjectID：12字节的二进制
+	docId := result.InsertedID.(primitive.ObjectID)
+	fmt.Println("自增ID:", docId.Hex())
+	fmt.Println(client)
+}
+
+```
+
+
+
+## 5、查询
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
+//任务的执行时间点
+type TimePoints struct {
+	StartTime int64 `bson:"startTime"`
+	EndTime   int64 `bson:"endTime"`
+}
+
+// 一条日志
+type LogRecords struct {
+	JobName   string     `bson:"jobName"`   // 任务名
+	Command   string     `bson:"command"`   // shell命令
+	Err       string     `bson:"err"`       // 脚本错误
+	Content   string     `bson:"content"`   // 脚本输出
+	TimePoint TimePoints `bson:"timePoint"` // 执行时间点
+}
+
+type FindByJobName struct {
+	JobName string `bson:"jobName"`
+}
+
+func main() {
+	var (
+		client *mongo.Client
+		//result *mongo.InsertOneResult
+		err    error
+		cursor *mongo.Cursor
+	)
+
+	//1.建立连接
+	// 建立mongodb连接
+	clientOptions := options.Client().ApplyURI("mongodb://127.0.0.1:27017")
+	if client, err = mongo.Connect(
+		context.TODO(), clientOptions); err != nil {
+		fmt.Println(err)
+		return
+	}
+	// 2, 选择数据库my_db
+	database := client.Database("ichunt")
+
+	// 3, 选择表my_collection
+	collection := database.Collection("cron_log")
+
+	//4, 查询记录
+	cron := &FindByJobName{JobName: "job10"}
+	Skip := int64(0)
+	limit := int64(2)
+	option := &options.FindOptions{
+		Skip:  &Skip,
+		Limit: &limit,
+	}
+
+	//查询
+	if cursor, err = collection.Find(context.TODO(), cron, option); nil != err {
+		fmt.Println(err)
+	}
+
+	defer cursor.Close(context.TODO())
+	//遍历结果集
+	for cursor.Next(context.TODO()) {
+		log := &LogRecords{}
+		if err = cursor.Decode(log); nil != err {
+			fmt.Println(err)
+		}
+		fmt.Println(log)
+	}
+
+}
+
+```
+
+
+
+## 6、删除文件
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"time"
+)
+
+//任务的执行时间点
+type TimePointss struct {
+	StartTime int64 `bson:"startTime"`
+	EndTime   int64 `bson:"endTime"`
+}
+
+// 一条日志
+type LogRecordss struct {
+	JobName   string      `bson:"jobName"`   // 任务名
+	Command   string      `bson:"command"`   // shell命令
+	Err       string      `bson:"err"`       // 脚本错误
+	Content   string      `bson:"content"`   // 脚本输出
+	TimePoint TimePointss `bson:"timePoint"` // 执行时间点
+}
+
+type TimeBeforeCond struct {
+	Before int64 `bson:"$lt"`
+}
+
+type DeleteCond struct {
+	BeforeCond TimeBeforeCond `bson:"timePoint.startTime"`
+}
+
+func main() {
+	var (
+		client *mongo.Client
+		//result *mongo.InsertOneResult
+		err       error
+		deleteRes *mongo.DeleteResult
+	)
+
+	//1.建立连接
+	// 建立mongodb连接
+	clientOptions := options.Client().ApplyURI("mongodb://127.0.0.1:27017")
+	if client, err = mongo.Connect(
+		context.TODO(), clientOptions); err != nil {
+		fmt.Println(err)
+		return
+	}
+	// 2, 选择数据库my_db
+	database := client.Database("ichunt")
+
+	// 3, 选择表my_collection
+	collection := database.Collection("cron_log")
+
+	//删除开始时间遭遇当前时间的所有日志
+	DeleteConds := &DeleteCond{BeforeCond: TimeBeforeCond{
+		Before: time.Now().Unix(),
+	}}
+
+	deleteRes, err = collection.DeleteMany(context.TODO(), DeleteConds)
+
+	fmt.Println(deleteRes.DeletedCount)
+}
+
+```
+
+
+
+# 分布式cron架构
+
+![image-20210111211856332](cron01.assets/image-20210111211856332.png)
+
+
+
+![image-20210111212230659](cron01.assets/image-20210111212230659.png)
+
+
+
+
+
+![image-20210111212510215](cron01.assets/image-20210111212510215.png)
+
+
+
+![image-20210111212722183](cron01.assets/image-20210111212722183.png)
+
+![image-20210111212953070](cron01.assets/image-20210111212953070.png)
+
+
+
+
+
+![image-20210111213110685](cron01.assets/image-20210111213110685.png)
+
+
+
+![image-20210111213202492](cron01.assets/image-20210111213202492.png)
+
+
+
+
+
+![image-20210111213234170](cron01.assets/image-20210111213234170.png)
+
+
+
+![image-20210111213321055](cron01.assets/image-20210111213321055.png)
+
+
+
+
+
+![image-20210111213339219](cron01.assets/image-20210111213339219.png)
+
+
+
+![image-20210111213358485](cron01.assets/image-20210111213358485.png)
+
+
+
+![image-20210111213414558](cron01.assets/image-20210111213414558.png)
 
 
 
@@ -907,6 +1197,33 @@ db.my_collection.createIndex({uid:1})
 
 
 
+![image-20210111213442607](cron01.assets/image-20210111213442607.png)
+
+
+
+
+
+![image-20210111213456237](cron01.assets/image-20210111213456237.png)
+
+![image-20210111213517916](cron01.assets/image-20210111213517916.png)
+
+
+
+## worker功能
+
+![image-20210111213736856](cron01.assets/image-20210111213736856.png)
+
+
+
+![image-20210111213801631](cron01.assets/image-20210111213801631.png)
+
+
+
+![image-20210111213852465](cron01.assets/image-20210111213852465.png)
+
+
+
+![image-20210111213937570](cron01.assets/image-20210111213937570.png)
 
 
 
@@ -914,37 +1231,13 @@ db.my_collection.createIndex({uid:1})
 
 
 
+![image-20210111214129378](cron01.assets/image-20210111214129378.png)
 
 
 
+## 代码开始
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+![image-20210111214437954](cron01.assets/image-20210111214437954.png)
 
 
 
