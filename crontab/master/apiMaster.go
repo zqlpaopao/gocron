@@ -97,6 +97,31 @@ ERR:
 	}
 }
 
+//列举所有任务
+// POST /job/delete name=job1
+func handleJobList(w http.ResponseWriter, r *http.Request) {
+	var (
+		jobs  []*common.Job
+		err   error
+		bytes []byte
+	)
+
+	//1.获取
+	if jobs, err = GJobMgr.ListJob(); nil != err {
+		goto ERR
+	}
+	fmt.Println(jobs)
+	//2.返回
+	if bytes, err = common.BuildResponse(0, "success", jobs); nil == err {
+		w.Write(bytes)
+	}
+
+ERR:
+	if bytes, err = common.BuildResponse(-1, "fail", jobs); nil != err {
+		w.Write(bytes)
+	}
+}
+
 //初始化服务
 func InitApiServer() (err error) {
 	var (
@@ -109,6 +134,7 @@ func InitApiServer() (err error) {
 	mux = http.NewServeMux()
 	mux.HandleFunc("/job/save", handleJobSave)
 	mux.HandleFunc("/job/delete", handleJobDelete)
+	mux.HandleFunc("/job/list", handleJobList)
 
 	//监听端口
 	if listen, err = net.Listen("tcp", ":"+strconv.Itoa(GConfig.ApiPort)); nil != err {
