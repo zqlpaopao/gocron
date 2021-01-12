@@ -7,9 +7,11 @@ import (
 
 //解析config
 type Config struct {
-	ApiPort         int `json:"apiPort"`
-	ApiReadTimeout  int `json:"apiReadTimeout"`
-	ApiWriteTimeout int `json:"ApiWriteTimeout"`
+	ApiPort         int      `json:"apiPort"`
+	ApiReadTimeout  int      `json:"apiReadTimeout"`
+	ApiWriteTimeout int      `json:"ApiWriteTimeout"`
+	EtcdEndpoints   []string `json:"etcdEndpoints"`
+	EtcdDialTimeout int      `json:"etcdDialTimeout"`
 }
 
 var (
@@ -23,6 +25,7 @@ func InitConfig(filename string) (err error) {
 	)
 
 	//读取配置文件
+	//fmt.Println(filename)
 	if content, err = ioutil.ReadFile(filename); nil != err {
 		return
 	}
