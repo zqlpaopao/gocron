@@ -63,7 +63,7 @@ func (jobMge *JobMge) SaveJob(job *common.Job) (old *common.Job, err error) {
 	)
 
 	//etcd保存key
-	jobKey = "/cron/jobs" + job.Name
+	jobKey = "/cron/jobs/" + job.Name
 
 	//任务信息json
 	if jobValue, err = json.Marshal(job); nil != err {
@@ -83,5 +83,32 @@ func (jobMge *JobMge) SaveJob(job *common.Job) (old *common.Job, err error) {
 		old = &oldJob
 	}
 
+	return
+}
+
+//删除任务
+func (jobMge *JobMge) DeleteJob(name string) (old *common.Job, err error) {
+	var (
+		jobKey    string
+		deleteRes *clientv3.DeleteResponse
+		deletePre common.Job
+	)
+
+	//etcd删除key
+	jobKey = "/cron/jobs/" + name
+
+	//删除
+	if deleteRes, err = GJobMgr.kv.Delete(context.TODO(), jobKey, clientv3.WithPrevKV()); nil != err {
+		return
+	}
+
+	if len(deleteRes.PrevKvs) > 0 {
+
+		if err = json.Unmarshal(deleteRes.PrevKvs[0].Value, &deletePre); nil != err {
+			err = nil
+			return
+		}
+		old = &deletePre
+	}
 	return
 }
