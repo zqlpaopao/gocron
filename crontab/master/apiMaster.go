@@ -110,7 +110,7 @@ func handleJobList(w http.ResponseWriter, r *http.Request) {
 	if jobs, err = GJobMgr.ListJob(); nil != err {
 		goto ERR
 	}
-	fmt.Println(jobs)
+
 	//2.返回
 	if bytes, err = common.BuildResponse(0, "success", jobs); nil == err {
 		w.Write(bytes)
@@ -120,6 +120,48 @@ ERR:
 	if bytes, err = common.BuildResponse(-1, "fail", jobs); nil != err {
 		w.Write(bytes)
 	}
+}
+
+//杀死任务接口
+// POST /job/delete name=job1
+func handleJobKill(w http.ResponseWriter, r *http.Request) {
+	var (
+		err   error
+		name  string
+		bytes []byte
+	)
+	if err = r.ParseForm(); nil != err {
+		goto ERR
+	}
+
+	//要杀死的任务名
+	name = r.PostForm.Get("name")
+
+	//杀死任务
+	if err = GJobMgr.KillJob(name); nil != err {
+		goto ERR
+	}
+
+	//2.返回
+	if bytes, err = common.BuildResponse(0, "success", nil); nil == err {
+		w.Write(bytes)
+	}
+
+ERR:
+	if bytes, err = common.BuildResponse(-1, "fail", nil); nil != err {
+		w.Write(bytes)
+	}
+	//ETCDCTL_API=3 ./etcdctl watch "/cron/killer/" --prefix
+	//监控目录变化
+	/*
+		PUT
+		/cron/killer/job1
+
+		DELETE
+		/cron/killer/job1
+
+	*/
+
 }
 
 //初始化服务
@@ -135,6 +177,7 @@ func InitApiServer() (err error) {
 	mux.HandleFunc("/job/save", handleJobSave)
 	mux.HandleFunc("/job/delete", handleJobDelete)
 	mux.HandleFunc("/job/list", handleJobList)
+	mux.HandleFunc("/job/kill", handleJobKill)
 
 	//监听端口
 	if listen, err = net.Listen("tcp", ":"+strconv.Itoa(GConfig.ApiPort)); nil != err {
