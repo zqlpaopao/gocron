@@ -60,6 +60,9 @@ github.com/golang/snappy
 # github.com/google/uuid v1.1.4
 ## explicit
 github.com/google/uuid
+# github.com/gorhill/cronexpr v0.0.0-20180427100037-88b0669f7d75
+## explicit
+github.com/gorhill/cronexpr
 # github.com/jmespath/go-jmespath v0.4.0
 github.com/jmespath/go-jmespath
 # github.com/klauspost/compress v1.9.5
