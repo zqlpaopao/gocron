@@ -126,3 +126,9 @@ func InitJobMge() (err error) {
 	err = GJobMgr.watcherJobs()
 	return
 }
+
+//创建每个任务的执行锁
+func (j *JobMge) CreateJobLock(jobName string) (jobLock *JobLock) {
+	//返回一把锁
+	return InitJobLock(jobName, j.kv, j.lease)
+}
