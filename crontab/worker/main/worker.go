@@ -44,6 +44,9 @@ func main() {
 		goto ERR
 	}
 
+	//执行期
+	worker.InitExecutor()
+
 	//任务管理器
 	if err = worker.InitJobMge(); nil != err {
 		goto ERR
