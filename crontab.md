@@ -178,7 +178,7 @@ set  GOPATH=`pwd`
 
 执行
 
-go  get github.com/grohill/cronexpr
+go  get github.com/gorhill/cronexpr
 
 # 解析调度时间 和 触发器调度
 
