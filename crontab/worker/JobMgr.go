@@ -124,7 +124,44 @@ func InitJobMge() (err error) {
 	}
 
 	err = GJobMgr.watcherJobs()
+
+	//监听killer
+	GJobMgr.watchKiller()
+
 	return
+}
+
+//监听强杀任务通知
+func (j *JobMge) watchKiller() {
+	var (
+		watchChan  clientv3.WatchChan
+		watchRes   clientv3.WatchResponse
+		watchEvent *clientv3.Event
+		jobName    string
+		jobEvent   *common.JobEvent
+		job        *common.Job
+	)
+	//监听 /cron/killer目录
+	go func() {
+		watchChan = j.watcher.Watch(context.TODO(), common.JobKillDir, clientv3.WithPrefix())
+		//处理监听
+		for watchRes = range watchChan {
+			for _, watchEvent = range watchRes.Events {
+				switch watchEvent.Type {
+				case mvccpb.PUT: //此目录放任务代表是要删除的
+					jobName = common.ExtractKillerName(string(watchEvent.Kv.Key))
+					job = &common.Job{Name: jobName}
+					jobEvent = common.BuildJobEvent(common.JobKillerEvent, job)
+
+					//推给scheduler
+					Gscheduler.PushJobEvent(jobEvent)
+				case mvccpb.DELETE: //删除事件
+
+				}
+			}
+		}
+
+	}()
 }
 
 //创建每个任务的执行锁

@@ -52,6 +52,11 @@ func main() {
 		goto ERR
 	}
 
+	//启动日志记录协程
+	if err = worker.InitLogSink(); err != nil {
+		goto ERR
+	}
+
 	//启动监听
 	//worker.WatchJobs()
 	for {

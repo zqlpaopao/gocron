@@ -24,6 +24,8 @@ func (s *Scheduler) handlerJobEvent(jobEv *common.JobEvent) {
 		jobSchedulerPlan *common.JobSchedulerPlan
 		jobExisted       bool
 		err              error
+		jobExecuteInfo   *common.JobExecuteInfo
+		jobExecuting     bool
 	)
 
 	switch jobEv.EventType {
@@ -36,6 +38,11 @@ func (s *Scheduler) handlerJobEvent(jobEv *common.JobEvent) {
 		//如果存在就删除
 		if jobSchedulerPlan, jobExisted = s.jobPlanTable[jobEv.Job.Name]; jobExisted {
 			delete(s.jobPlanTable, jobEv.Job.Name)
+		}
+	case common.JobKillerEvent: //强杀任务的执行
+		//判断人数是否子在执行中
+		if jobExecuteInfo, jobExecuting = s.jobExecutingTable[jobEv.Job.Name]; jobExecuting {
+			jobExecuteInfo.CancelFunc()
 		}
 	}
 }
@@ -139,8 +146,29 @@ func (s *Scheduler) schedulerLoop() {
 
 //处理任务执行结果
 func (s *Scheduler) handJobResult(jobResult *common.JobExecuteResult) {
+	var jobLog *common.JobLog
 	//删除正在执行的任务
 	delete(s.jobExecutingTable, jobResult.Executeinfo.Job.Name)
+
+	//生成执行日志
+	if jobResult.Err != common.ErrLockAlreadyRequired {
+		jobLog = &common.JobLog{
+			JobName:      jobResult.Executeinfo.Job.Name,
+			Command:      jobResult.Executeinfo.Job.Command,
+			Output:       string(jobResult.OutPut),
+			PlanTime:     jobResult.Executeinfo.PlanTime.UnixNano() / 1000 / 1000,
+			ScheduleTime: jobResult.Executeinfo.RealTime.UnixNano() / 1000 / 1000,
+			StartTime:    jobResult.StartTime.UnixNano() / 1000 / 1000,
+			EndTime:      jobResult.EndTime.UnixNano() / 1000 / 1000,
+		}
+		if jobResult.Err != nil {
+			jobLog.Err = jobResult.Err.Error()
+		} else {
+			jobLog.Err = ""
+		}
+		GLogSink.Append(jobLog)
+	}
+
 	fmt.Println(string(jobResult.OutPut), jobResult.Err)
 }
 

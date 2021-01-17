@@ -10,4 +10,6 @@ const (
 	JobSaveEvent = 1 //保存任务事件
 
 	JobDeleteEvent = 2 //删除任务事件
+
+	JobKillerEvent = 3 //杀死任务
 )

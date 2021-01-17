@@ -80,7 +80,8 @@ func handleJobDelete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	name = r.PostForm.Get("name")
-
+	//fmt.Println(name)
+	//os.Exit(4)
 	//2.删除job
 	if old, err = GJobMgr.DeleteJob(name); err != nil {
 		goto ERR
@@ -136,7 +137,7 @@ func handleJobKill(w http.ResponseWriter, r *http.Request) {
 
 	//要杀死的任务名
 	name = r.PostForm.Get("name")
-
+	fmt.Println(name)
 	//杀死任务
 	if err = GJobMgr.KillJob(name); nil != err {
 		goto ERR

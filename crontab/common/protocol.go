@@ -1,6 +1,7 @@
 package common
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/gorhill/cronexpr"
 	"strings"
@@ -23,9 +24,11 @@ type JobSchedulerPlan struct {
 
 //任务执行时间
 type JobExecuteInfo struct {
-	Job      *Job
-	PlanTime time.Time //理论上的调度时间
-	RealTime time.Time //实际的执行时间
+	Job        *Job
+	PlanTime   time.Time          //理论上的调度时间
+	RealTime   time.Time          //实际的执行时间
+	CancelCtx  context.Context    //任务command的context
+	CancelFunc context.CancelFunc //用于取消command执行的cancel函数
 }
 
 //HTTP返回
@@ -48,6 +51,23 @@ type JobExecuteResult struct {
 	Err         error           //脚本错误原因
 	StartTime   time.Time       //启动时间
 	EndTime     time.Time       //结束时间
+}
+
+//任务执行日志
+type JobLog struct {
+	JobName      string `bson:"jobName"`      //任务名字
+	Command      string `bson:"command"`      //脚本命令
+	Err          string `bson:"err"`          //错误原因
+	Output       string `bson:"output"`       //脚本输出
+	PlanTime     int64  `bson:"planTime"`     //计划开始时间
+	ScheduleTime int64  `bson:"scheduleTime"` //任务调度时间
+	StartTime    int64  `bson:"startTime"`    //任务开始时间
+	EndTime      int64  `bson:"endTime"`      //任务结束时间
+}
+
+//日志批次
+type LogBatch struct {
+	Logs []interface{} //多条
 }
 
 //应答方法
@@ -112,10 +132,18 @@ func BuildJobSchedulerPlan(job *Job) (jobSchedulerPlan *JobSchedulerPlan, err er
 }
 
 //构造执行状态信息
-func BuildJobExecuteInfo(jobScheduler *JobSchedulerPlan) *JobExecuteInfo {
-	return &JobExecuteInfo{
+func BuildJobExecuteInfo(jobScheduler *JobSchedulerPlan) (JobExecuteInfos *JobExecuteInfo) {
+	JobExecuteInfos = &JobExecuteInfo{
 		Job:      jobScheduler.Job,
 		PlanTime: jobScheduler.NextTime,
 		RealTime: time.Now(), //真正执行时间
 	}
+	JobExecuteInfos.CancelCtx, JobExecuteInfos.CancelFunc = context.WithCancel(context.TODO())
+	return
+
+}
+
+//从/cron/killer/job10 提取job10
+func ExtractKillerName(killKey string) string {
+	return strings.TrimPrefix(killKey, JobKillDir)
 }

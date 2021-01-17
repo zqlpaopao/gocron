@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"context"
 	"crontabInit/common"
 	"os/exec"
 	"time"
@@ -35,6 +34,8 @@ func (e *Executor) ExecuteJob(info *common.JobExecuteInfo) {
 		jobLock = GJobMgr.CreateJobLock(info.Job.Name)
 
 		//上锁
+		//解决分布式集群节点间时间同步不准确问题,节点间误差最多1ms
+		//time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond)
 		err = jobLock.TryLock()
 		defer jobLock.Unlock() //释放锁
 
@@ -44,7 +45,7 @@ func (e *Executor) ExecuteJob(info *common.JobExecuteInfo) {
 		} else {
 			result.StartTime = time.Now()
 			//执行shell命令
-			cmd = exec.CommandContext(context.TODO(), "/bin/bash", "-c", info.Job.Command)
+			cmd = exec.CommandContext(info.CancelCtx, "/bin/bash", "-c", info.Job.Command)
 
 			//执行并捕获输出
 			output, err = cmd.CombinedOutput()
