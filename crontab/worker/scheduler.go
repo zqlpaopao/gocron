@@ -166,6 +166,7 @@ func (s *Scheduler) handJobResult(jobResult *common.JobExecuteResult) {
 		} else {
 			jobLog.Err = ""
 		}
+		fmt.Println(jobLog)
 		GLogSink.Append(jobLog)
 	}
 

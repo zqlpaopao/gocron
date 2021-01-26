@@ -147,3 +147,8 @@ func BuildJobExecuteInfo(jobScheduler *JobSchedulerPlan) (JobExecuteInfos *JobEx
 func ExtractKillerName(killKey string) string {
 	return strings.TrimPrefix(killKey, JobKillDir)
 }
+
+//获取workerip
+func ExtractWorkerIp(killKey string) string {
+	return strings.TrimPrefix(killKey, JobWorkerDir)
+}

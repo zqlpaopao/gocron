@@ -97,6 +97,9 @@ func (l *LogSink) writeLoop() {
 
 //发送日志
 func (l *LogSink) Append(jobLog *common.JobLog) {
+	if jobLog == nil {
+		return
+	}
 	select {
 	case l.logChan <- jobLog:
 	default:

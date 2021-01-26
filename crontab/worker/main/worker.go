@@ -39,6 +39,11 @@ func main() {
 		goto ERR
 	}
 
+	//启动日志记录协程
+	if err = worker.InitLogSink(); err != nil {
+		goto ERR
+	}
+
 	//启动调度器
 	if err = worker.InitScheduler(); nil != err {
 		goto ERR
@@ -52,8 +57,8 @@ func main() {
 		goto ERR
 	}
 
-	//启动日志记录协程
-	if err = worker.InitLogSink(); err != nil {
+	//服务注册
+	if err = worker.InitRegister(); err != nil {
 		goto ERR
 	}
 

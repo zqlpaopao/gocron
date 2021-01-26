@@ -7,6 +7,9 @@ const (
 
 	JobLockDir = "/cron/lock/" //任务锁目录
 
+	//服务注册目录
+	JobWorkerDir = "/cron/workers/"
+
 	JobSaveEvent = 1 //保存任务事件
 
 	JobDeleteEvent = 2 //删除任务事件

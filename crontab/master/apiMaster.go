@@ -165,6 +165,28 @@ ERR:
 
 }
 
+//获取注册节点
+func handleWorkerList(w http.ResponseWriter, r *http.Request) {
+	var (
+		workerArr []string
+		err       error
+		bytes     []byte
+	)
+	if workerArr, err = GWorkerMage.ListWorkers(); err != nil {
+		goto ERR
+	}
+
+	//2.返回
+	if bytes, err = common.BuildResponse(0, "success", workerArr); nil == err {
+		w.Write(bytes)
+	}
+
+ERR:
+	if bytes, err = common.BuildResponse(-1, "fail", nil); nil != err {
+		w.Write(bytes)
+	}
+}
+
 //初始化服务
 func InitApiServer() (err error) {
 	var (
@@ -181,6 +203,7 @@ func InitApiServer() (err error) {
 	mux.HandleFunc("/job/delete", handleJobDelete)
 	mux.HandleFunc("/job/list", handleJobList)
 	mux.HandleFunc("/job/kill", handleJobKill)
+	mux.HandleFunc("/worker/list", handleWorkerList)
 
 	//静态文件 index.html 匹配最长的
 	staticDir = http.Dir(GConfig.Webroot)
