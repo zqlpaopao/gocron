@@ -71,4 +71,5 @@ func InitWorkerMgr() (err error) {
 		kv:     kv,
 		lease:  lease,
 	}
+	return
 }
